@@ -12,7 +12,7 @@ function preload() {
     game.load.image('bleach2','images/bleach2.png');
     game.load.spritesheet('pirate_1','images/testSpritePirate11.png',100,100);
     game.load.image('button1','images/button1_1.png');
-    game.load.spritesheet('monster_1','images/poringsprite6.png',420,800);
+    game.load.spritesheet('monster_1','images/poringsprite7.png',420,800);
     game.load.image('hitboxP_1','images/hit_Box.png');
     game.load.image('hitboxM_1','images/hit_BoxM1.png');
     game.load.image('dummyP1','images/ff.png');
@@ -100,7 +100,7 @@ function create() {
     game.input.mouse.capture = true;
     ///////////////////////////////////////
     timer = game.time.create(true);
-    timer.loop(2000, spawn, this);
+    timer.loop(1000, spawn, this);
     timer.start();
     //////////////////////////////////////
     spawn();
@@ -153,7 +153,7 @@ pirate1 = function (indexP,game) {
     var x = game.world.width*(1/11);
     var y = game.world.height*(4/10);
     this.game = game;
-    this.health = 10;
+    this.health = 20;
     this.alive = true;
     this.pirate_1 = pirate.create(x ,y , 'pirate_1');
     this.pirate_1.animations.add('walk',[0,1,2],2,true);
@@ -205,8 +205,8 @@ function hitboxP1( pirate_1 , game ){
     var y = pirate_1.y + 75;
     this.alive = true;
     this.hitboxP_1 = hitboxP.create( x , y , 'hitboxP_1');
-    this.hitboxP_1.anchor.set(1);
-    this.hitboxP_1.scale.setTo(0.2, 0.3);
+    this.hitboxP_1.anchor.set(1.9);
+    this.hitboxP_1.scale.setTo(0.1, 0.3);
     game.physics.arcade.enable(this.hitboxP_1);
     //this.hitboxP_1.name = indexHitbox.toString();
     var countHitbox = 1;
@@ -236,14 +236,14 @@ function pirateGotDamaged( pirate_1, hitboxM ) {
     pirateA[pirate_1.name].damage();
 }
 pirate1.prototype.damage = function() {
-    //console.log("pirate damaged")
+    console.log("pirate damaged")
     this.health -= 1;
-    if ( this.health == 8,6,4){
-        //console.log("knocked 1");
+    if ( this.health == 10){
+        console.log("knocked 1");
         this.pirate_1.body.velocity.y = -400;
     }
-    if ( this.health <= 2){
-        //console.log("knocked 2");
+    if ( this.health == 5){
+        console.log("knocked 2");
         this.pirate_1.body.velocity.y = -600;
     }
     if (this.health <= 0){
@@ -261,14 +261,15 @@ function spawn(){
 }
 monster1 = function (indexM,game) {
     var x = game.world.width*(9.5/10);
-    var y = game.world.height*(4/7);
+    var y = game.world.height*(4.55/7);
     this.game = game;
     this.health = 5;
     this.alive = true;
     this.monster_1 = monster.create(x, y, 'monster_1');
     Mwalk = this.monster_1.animations.add('Mwalk',[0,1,2,3,4,5,6,7,8,9],20,true);
     Mdefault = this.monster_1.animations.add('Mdefault',[10],1,true);
-    this.monster_1.animations.add('attackM',[11,12,13],1.5,false);
+    attackM = this.monster_1.animations.add('attackM',[11,12,13,14,15,16,17,18,19,20],20,false);
+    deadM = this.monster_1.animations.add('deadM',[21],1,true);
     this.monster_1.anchor.set(0.5);
     this.monster_1.scale.setTo(0.15, 0.15);
     game.physics.arcade.enable(this.monster_1);
@@ -283,17 +284,14 @@ monster1 = function (indexM,game) {
 monster1.prototype.update = function(i){
     hitboxAM[i].update(this.monster_1);
 
-    if( monsterA[i].monster_1.animations.frame==11||
-    monsterA[i].monster_1.animations.frame==12){
+    if( monsterA[i].monster_1.animations.frame==15,16){
       monsterA[i].monster_1.body.velocity.x = 0;
-      if( monsterA[i].monster_1.animations.frame==11 ){
+      if( monsterA[i].monster_1.animations.frame==15){
         monsterA[i].monster_1.body.velocity.x = 0;
-      }else if( monsterA[i].monster_1.animations.frame==12 ){
-        //console.log("hitboxAppearM");
+      }else if( monsterA[i].monster_1.animations.frame==16 ){
         timer = game.time.create(true);
         timer.add(0, hitboxAppearM, hitboxAM[this.monster_1.name]);
         timer.start();
-        //hitboxA[this.pirate_1.name].hitboxAppear;
         monsterA[i].monster_1.body.velocity.x = 0;
       }
     }
@@ -328,7 +326,7 @@ hitboxM1.prototype.update = function(monster_1){
 }
 function hitboxAppearM( ){
     if( timeHitboxMAppear < game.time.now ){
-      timeHitboxMAppear = game.time.now + 1000;
+      timeHitboxMAppear = game.time.now + 500;
       //console.log("spawn hitbox M");
       this.hitboxM_1.revive();
       timer = game.time.create(true);
@@ -345,7 +343,7 @@ function monsterGotDamaged( monster_1, hitboxP) {
     monsterA[monster_1.name].damage();
 }
 monster1.prototype.damage = function() {
-    this.health -= 1;
+    this.health -= 3;
     if ( this.health == 3){
         //console.log("knocked 1");
         this.monster_1.body.velocity.y = -400;
@@ -356,15 +354,19 @@ monster1.prototype.damage = function() {
     }
     if (this.health <= 0){
         this.alive = false;
-        //this.monster_1.kill();
-        killMonster( this.monster_1 );
-        //console.log("monster killed");
+        //killMonster( this.monster_1 );
+        this.monster_1.body.velocity.x = 0;
+        this.monster_1.body.velocity.y = -1000;
+        this.monster_1.animations.play('deadM');
+        timer = game.time.create(true);
+        timer.add(250, killMonster, this);
+        timer.start();
     }
 }
-function killMonster( monster ) {
-    monster.kill();
-    //monsterA.pop(  );
-    //console.log("monster killed***");
+function killMonster( ) {
+    console.log("monster kill");
+    this.monster_1.exists = false;
+    this.monster_1.kill();
 }
 
 //////////////////////////////////////////////////
