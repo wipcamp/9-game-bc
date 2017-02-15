@@ -12,8 +12,9 @@ function preload() {
     game.load.image('bleach2','images/bleach2.png');
     game.load.spritesheet('pirate_1','images/testSpritePirate11.png',100,100);
     game.load.image('button1','images/button1_1.png');
-    game.load.image('monster_1','images/poring2.png');
+    game.load.spritesheet('monster_1','images/poringsprite6.png',420,800);
     game.load.image('hitboxP_1','images/hit_Box.png');
+    game.load.image('hitboxM_1','images/hit_BoxM1.png');
     game.load.image('dummyP1','images/ff.png');
 }
 ///////////
@@ -29,14 +30,19 @@ var pirateA;
 var pirate;
 var indexP=0;
 var attackP=0;
+var pAttacking;
+var startP;
 var hitboxP;
 var timeHitboxAppear = 0;
-var timeHitboxKill = 0;
 var indexHitbox = 0
 ///////////
 var monsterA;
 var monster;
 var indexM=0;
+var startM;
+var hitboxM;
+var timeHitboxMAppear = 0;
+var indexHitboxM = 0
 ///////////
 var check = false;
 ///////////
@@ -51,9 +57,9 @@ function create() {
     this.myWorld.enableBody = true;
     button = game.add.group();
     /////////////////////////////////////////
-    /*bleach = this.add.sprite(game.world.width*(5/10),game.world.height*(8/16), 'bleach');
+    bleach = this.add.sprite(game.world.width*(5/10),game.world.height*(8/16), 'bleach');
     bleach.anchor.set(0.5);
-    bleach.scale.setTo(1, 1);*/
+    bleach.scale.setTo(1, 1);
     /////////////////////////////////////////
     bleach2 = this.myWorld.create(game.world.width*(1/10),game.world.height*(14/16), 'bleach2');
     bleach2.anchor.set(0.2);
@@ -86,13 +92,16 @@ function create() {
     monsterA=[];
     monster = game.add.group();
     monster.enableBody = true;
+    hitboxAM=[];
+    hitboxM = game.add.group();
+    hitboxM.enableBody = true;
     ////////////////////////////////////////
     button1.events.onInputDown.add(buy, this);
     game.input.mouse.capture = true;
     ///////////////////////////////////////
-    /*timer = game.time.create(true);
-    timer.loop(3000, spawn, this);
-    timer.start();*/
+    timer = game.time.create(true);
+    timer.loop(4000, spawn, this);
+    timer.start();
     //////////////////////////////////////
     spawn();
 }
@@ -106,7 +115,14 @@ function update() {
     }
     for( var i =0; i < pirateA.length ; i++){
       if(pirateA[i].alive){
-        pirateA[i].update();
+        //if(hitboxA[i].alive){
+          pirateA[i].update(i);
+        //}
+      }
+    }
+    for( var i =0; i < pirateA.length ; i++){
+      if(pirateA[i].alive){
+        game.physics.arcade.overlap( pirateA[i].pirate_1 , hitboxM, pirateGotDamaged, null , this);
       }
     }
     /////////////////////////monster///////// /////////
@@ -117,7 +133,7 @@ function update() {
     }
     for( var i =0; i < monsterA.length ; i++){
       if(monsterA[i].alive){
-        monsterA[i].update();
+        monsterA[i].update(i);
       }
     }
     for( var i =0; i < monsterA.length ; i++){
@@ -137,33 +153,57 @@ pirate1 = function (indexP,game) {
     var x = game.world.width*(1/11);
     var y = game.world.height*(4/10);
     this.game = game;
-    this.health = 1000;
+    this.health = 5;
     this.alive = true;
     this.pirate_1 = pirate.create(x ,y , 'pirate_1');
     this.pirate_1.animations.add('walk',[0,1,2],2,true);
-    this.pirate_1.animations.add('attack',[3,4,5],1,true);
+    //aniAttack = this.pirate_1.animations.add('attack',[3,4,5],1,false);
+    this.pirate_1.animations.add('attack',[3,4,5],1,false);
     this.pirate_1.anchor.set(0.5);
     this.pirate_1.scale.setTo(2.0, 2.0);
     game.physics.arcade.enable(this.pirate_1);
     this.pirate_1.body.gravity.y = 980;
     this.pirate_1.body.collideWorldBound = true;
+    this.pirate_1.events.onOutOfBounds.add( killPirate, this);
     this.pirate_1.name = indexP.toString();
+    this.pirate_1.body.velocity.x = 200;
+    startP=0;
+    hitboxA.push(new hitboxP1( this.pirate_1,game));
 }
-pirate1.prototype.update = function(){
-    if(this.pirate_1.overlap(monster)){
-      console.log("overlap");
-      this.pirate_1.body.velocity.x = 0;
-      this.pirate_1.animations.play('attack');
-      timer = game.time.create(true);
-      timer.loop(1000, hitboxAppear, this);
-      timer.start();
-      /*timer = game.time.create(true);
-      timer.loop(1020, hitboxKilled, this);
-      timer.start();*/
-    }else{
-      timer.stop();
-      this.pirate_1.body.velocity.x = 200;
-      this.pirate_1.animations.play('walk');
+pirate1.prototype.update = function(i){
+    hitboxA[i].update(this.pirate_1);
+    if(pirateA[i].pirate_1.animations.frame==3||
+    pirateA[i].pirate_1.animations.frame==4){
+      pirateA[i].pirate_1.body.velocity.x = 0;
+      if( pirateA[i].pirate_1.animations.frame==3 ){
+        pirateA[i].pirate_1.body.velocity.x = 0;
+      }else if( pirateA[i].pirate_1.animations.frame==4 ){
+        timer = game.time.create(true);
+        timer.add(0, hitboxAppear, hitboxA[this.pirate_1.name]);
+        timer.start();
+        pirateA[i].pirate_1.body.velocity.x = 0;
+      }
+    }
+
+    /*if( !( this.pirate_1.body.overlapY ) && this.pirate_1.startP == 1){
+        //this.pirate_1.animations.play('walk');
+        console.log("knocked");
+        this.pirate_1.body.velocity.x = -400;*/
+    //if( !( this.pirate_1.body.overlapY )){
+    if(!game.physics.arcade.collide(this.pirate_1,bleach2)){
+      console.log("knocked 1");
+      if( this.pirate_1.startP == 1){
+        //this.pirate_1.animations.play('walk');
+        console.log("knocked 2");
+        this.pirate_1.body.velocity.x = -400;
+      }
+    }if(this.pirate_1.overlap(monster)){
+        //console.log("overlapMonster");
+        this.pirate_1.startP = 1;
+        this.pirate_1.animations.play('attack');
+    }else if( this.pirate_1.body.overlapY ){
+        this.pirate_1.animations.play('walk');
+        this.pirate_1.body.velocity.x = 200;
     }
 }
 function hitboxP1( pirate_1 , game ){
@@ -174,44 +214,52 @@ function hitboxP1( pirate_1 , game ){
     this.hitboxP_1 = hitboxP.create( x , y , 'hitboxP_1');
     this.hitboxP_1.anchor.set(1);
     this.hitboxP_1.scale.setTo(0.2, 0.3);
-    //game.physics.arcade.enable(hitboxA);
     game.physics.arcade.enable(this.hitboxP_1);
     //this.hitboxP_1.name = indexHitbox.toString();
     var countHitbox = 1;
-    timer = game.time.create(true);
-    timer.loop(10, hitboxKilled, this);
-    timer.start();
+    this.hitboxP_1.kill();
 }
-function hitboxAppear( countHitbox ){
+hitboxP1.prototype.update = function(pirate_1){
+    this.hitboxP_1.x=pirate_1.x+175;
+    this.hitboxP_1.y=pirate_1.y+75;
+}
+function hitboxAppear( ){
     if( timeHitboxAppear < game.time.now ){
-      timeHitboxAppear = game.time.now + 3000;
+      timeHitboxAppear = game.time.now + 1000;
       console.log("spawn hitbox");
-      hitboxA.push(new hitboxP1( this.pirate_1,game));
-      //hitboxA.pop(hitboxP1(this.pirate_1,game));
-      //countHitbox = 1;
+      this.hitboxP_1.revive();
+      //thisHitbox.reset(0,0);
+      timer = game.time.create(true);
+      timer.add(10, hitboxKilled, this);
+      timer.start();
     }
 }
-function hitboxKilled(  hitboxP_1,countHitbox) {
-    if( timeHitboxKill < game.time.now && countHitbox != 0){
-      timeHitboxKill = game.time.now + 3000;
-      //this.alive = false;
-
-      //this.hitboxP_1.kill();
-      this.hitboxP_1.kill();
-      hitboxA.pop();
-      indexHitbox++;
-      console.log("hitbox killed*****");
-      countHitbox = 0;
-
-    }
+function hitboxKilled(  hitboxP_1 ) {
+    this.hitboxP_1.kill();
+    //console.log("hitbox killed*****");
+}
+function pirateGotDamaged( pirate_1, hitboxM ) {
+    //console.log("monsterGotDamaged");
+    pirateA[pirate_1.name].damage();
 }
 pirate1.prototype.damage = function() {
     console.log("pirate damaged")
     this.health -= 1;
+    if ( this.health == 3){
+        //console.log("knocked 1");
+        this.pirate_1.body.velocity.y = -400;
+    }
+    if ( this.health <= 2){
+        //console.log("knocked 2");
+        this.pirate_1.body.velocity.y = -600;
+    }
     if (this.health <= 0){
         this.alive = false;
         this.pirate_1.kill();
     }
+}
+function killPirate( pirate ) {
+    pirate.kill();
 }
 function monsterHitPirate( pirate_1,monster) {
     console.log("monsterHitPirate");
@@ -225,42 +273,109 @@ monster1 = function (indexM,game) {
     var x = game.world.width*(9.5/10);
     var y = game.world.height*(4/7);
     this.game = game;
-    this.health = 100;
+    this.health = 5;
     this.alive = true;
     this.monster_1 = monster.create(x, y, 'monster_1');
+    Mwalk = this.monster_1.animations.add('Mwalk',[0,1,2,3,4,5,6,7,8,9],20,true);
+    Mdefault = this.monster_1.animations.add('Mdefault',[10],1,true);
+    this.monster_1.animations.add('attackM',[11,12,13],1.5,false);
     this.monster_1.anchor.set(0.5);
     this.monster_1.scale.setTo(0.15, 0.15);
     game.physics.arcade.enable(this.monster_1);
     this.monster_1.body.gravity.y = 980;
+    //this.monster_1.body.bounce.set(0.8);
     this.monster_1.body.collideWorldBound = true;
+    this.monster_1.events.onOutOfBounds.add( killMonster, this);
     this.monster_1.name = indexM.toString();
+    this.monster_1.body.velocity.x = -200;
+    startM = 0;
+    hitboxAM.push(new hitboxM1( this.monster_1,game));
 }
-monster1.prototype.update = function(){
-    if(this.monster_1.overlap(pirate)){
-      //console.log("overlap");
-      this.monster_1.body.velocity.x = 0;
-      //this.monster_1.animations.play('attack');
-      /*timer3 = game.time.create(true);
-      timer3.loop(2001, hitMonster, this);
-      timer3.start();*/
-    }else{
-      this.monster_1.body.velocity.x = -200;
-      //this.monster_1.animations.play('walk');
-    }
-}
-monster1.prototype.damage = function() {
-    console.log("monster damaged")
-    this.health -= 1;
-    if (this.health <= 0){
-        this.alive = false;
-        this.monster_1.kill();
-        //monsterA.pop();
-        console.log("monster killed")
-    }
-}
+monster1.prototype.update = function(i){
+    hitboxAM[i].update(this.monster_1);
 
+    if( monsterA[i].monster_1.animations.frame==11||
+    monsterA[i].monster_1.animations.frame==12){
+      monsterA[i].monster_1.body.velocity.x = 0;
+      if( monsterA[i].monster_1.animations.frame==11 ){
+        monsterA[i].monster_1.body.velocity.x = 0;
+      }else if( monsterA[i].monster_1.animations.frame==12 ){
+        console.log("hitboxAppearM");
+        timer = game.time.create(true);
+        timer.add(0, hitboxAppearM, hitboxAM[this.monster_1.name]);
+        timer.start();
+        //hitboxA[this.pirate_1.name].hitboxAppear;
+        monsterA[i].monster_1.body.velocity.x = 0;
+      }
+    }
+    if( !(this.monster_1.body.overlapY) && this.monster_1.startM == 1){
+      this.monster_1.animations.play('Mdefault');
+      this.monster_1.body.velocity.x = 400;
+    }else if(this.monster_1.overlap(pirate)){
+      this.monster_1.startM = 1;
+      this.monster_1.body.velocity.x = 0;
+      this.monster_1.animations.play('attackM');
+    }else if( this.monster_1.body.overlapY ){
+      this.monster_1.body.velocity.x = -200;
+      this.monster_1.animations.play('Mwalk');
+    }
+}
+function hitboxM1( monster_1 , game ){
+    this.game = game;
+    var x = monster_1.x - 80;
+    var y = monster_1.y + 55;
+    this.alive = true;
+    this.hitboxM_1 = hitboxM.create( x , y , 'hitboxM_1');
+    this.hitboxM_1.anchor.set(1);
+    this.hitboxM_1.scale.setTo(0.1, 0.5);
+    game.physics.arcade.enable(this.hitboxM_1);
+    //this.hitboxM_1.name = indexHitbox.toString();
+    var countHitbox = 1;
+    this.hitboxM_1.kill();
+}
+hitboxM1.prototype.update = function(monster_1){
+    this.hitboxM_1.x = monster_1.x - 40;
+    this.hitboxM_1.y = monster_1.y + 55;
+}
+function hitboxAppearM( ){
+    if( timeHitboxMAppear < game.time.now ){
+      timeHitboxMAppear = game.time.now + 1000;
+      console.log("spawn hitbox M");
+      this.hitboxM_1.revive();
+      timer = game.time.create(true);
+      timer.add(10, hitboxMKilled, this);
+      timer.start();
+    }
+}
+function hitboxMKilled(  hitboxM_1 ) {
+    this.hitboxM_1.kill();
+    console.log("hitbox killed*****");
+}
 function monsterGotDamaged( monster_1, hitboxP) {
     //console.log("monsterGotDamaged");
     monsterA[monster_1.name].damage();
 }
+monster1.prototype.damage = function() {
+    this.health -= 1;
+    if ( this.health == 3){
+        //console.log("knocked 1");
+        this.monster_1.body.velocity.y = -400;
+    }
+    if ( this.health <= 2){
+        //console.log("knocked 2");
+        this.monster_1.body.velocity.y = -600;
+    }
+    if (this.health <= 0){
+        this.alive = false;
+        //this.monster_1.kill();
+        killMonster( this.monster_1 );
+        //console.log("monster killed");
+    }
+}
+function killMonster( monster ) {
+    monster.kill();
+    //monsterA.pop(  );
+    console.log("monster killed***");
+}
+
 //////////////////////////////////////////////////
